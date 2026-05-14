@@ -1,9 +1,17 @@
 from pathlib import Path
 from unittest import TestCase
+from unittest.mock import patch
 
 import pandas as pd
 
-from budgie.tree import BudgetTreeError, build_tree, register_combine_op, render_ascii, render_tikz
+from budgie.tree import (
+    BudgetTreeError,
+    build_tree,
+    display_tree,
+    register_combine_op,
+    render_ascii,
+    render_tikz,
+)
 
 
 FIXTURES_DIR = Path(__file__).parent.joinpath("fixtures")
@@ -87,6 +95,42 @@ class TestTreeRendering(TestCase):
         self.assertIn("coherent\\_1", tikz)
         self.assertNotIn("coherent\\\\_1", tikz)
         self.assertEqual(tikz.count("edge label={"), _count_edge_labels(node))
+
+    def test_alert_on_exceedances_disabled_forest(self):
+        node = build_tree(_sample_table(), config=_sample_config())
+        tikz = render_tikz(node, layout="forest", standalone=False, alert_on_exceedances=False)
+
+        self.assertNotIn("\\colorbox{yellow", tikz)
+        self.assertNotIn("overallocated", tikz)
+        self.assertNotIn("$\\triangle", tikz)
+        self.assertNotIn("\\triangle!", tikz)
+        self.assertIn("\\underline{", tikz)
+
+    def test_alert_on_exceedances_disabled_outline(self):
+        node = build_tree(_sample_table(), config=_sample_config())
+        tikz = render_tikz(node, layout="outline", standalone=False, alert_on_exceedances=False)
+
+        self.assertNotIn("\\colorbox{yellow", tikz)
+        self.assertNotIn("overallocated", tikz)
+        self.assertNotIn("$\\triangle", tikz)
+        self.assertNotIn("\\triangle!", tikz)
+        self.assertIn("\\underline{", tikz)
+
+    def test_alert_on_exceedances_default_enabled(self):
+        node = build_tree(_sample_table(), config=_sample_config())
+        tikz = render_tikz(node, layout="forest", standalone=False)
+
+        self.assertIn("\\colorbox{yellow", tikz)
+        self.assertIn("overallocated", tikz)
+        self.assertIn("$\\triangle!$", tikz)
+
+    def test_display_tree_passes_alert_flag_through(self):
+        node = build_tree(_sample_table(), config=_sample_config())
+
+        with patch("budgie.tree.render_tikz", return_value="tex") as mock_render_tikz:
+            display_tree(node, alert_on_exceedances=False)
+
+        self.assertFalse(mock_render_tikz.call_args.kwargs["alert_on_exceedances"])
 
     def test_requires_post_processing_chain(self):
         with self.assertRaises(BudgetTreeError) as ctx:
