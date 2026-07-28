@@ -709,27 +709,49 @@ def render_tikz(
     layout: str = "forest",
     alert_on_exceedances: bool = True,
 ) -> str:
-    """Return tikz LaTeX for the tree.
+    r"""Return tikz LaTeX for the tree.
+
+    Colour coding
+    -------------
+    The emitted LaTeX is colour-coded (see ``docs/tree_rendering.md`` for the
+    full reference; this scheme is what ``schmidt_ESP_template`` renders):
+
+    * **Per-Type fill.** Every node is filled by its ``Type``. Distinct types are
+      collected in tree-walk (first-seen) order and assigned, cycling, from the
+      fixed palette ``blue!15``, ``green!15``, ``orange!20``, ``purple!15``,
+      ``teal!15``, ``gray!20``, ``cyan!15`` via one auto-generated
+      ``type_<slug>/.style={fill=...}`` per type.
+    * **Over-allocated leaf** (``CBE > Allocation``): the ``overallocated`` style
+      adds a ``draw=red, very thick`` bold border, a ``$\triangle!$`` warning
+      prefix, and a ``\colorbox{yellow!50}`` highlight on the CBE value. Leaves
+      only -- subtotals and post-processing roll-ups are never flagged.
+    * **Within-allocation leaf** (``CBE <= Allocation``): the CBE value is
+      ``\underline``d. Always applied, independent of ``alert_on_exceedances``.
 
     Parameters
     ----------
     node:
         The already-built tree to render.
     show:
-        Which numeric fields to show: ``both``, ``cbe``, or ``allocation``.
+        Which numeric fields to show: ``both``, ``cbe``, or ``allocation``. The
+        yellow highlight and underline decorate the CBE text, so they only appear
+        when CBE is shown (``both`` or ``cbe``).
     standalone:
-        When ``True`` the return value is a complete LaTeX document that can be
-        compiled directly. When ``False`` only the tikz/forest fragment is
-        returned so callers can embed it into a larger document.
+        When ``True`` the return value is a complete LaTeX document (loading
+        ``forest`` and ``xcolor``) that can be compiled directly. When ``False``
+        only the tikz/forest fragment is returned so callers can embed it into a
+        larger document, which must then load ``forest`` and ``xcolor`` itself.
     layout:
         ``forest`` produces boxed nodes in a top-down tree. ``outline`` produces
         a directory-style outline similar to the example discussed at
-        https://latexdraw.com/draw-trees-in-tikz/.
+        https://latexdraw.com/draw-trees-in-tikz/. Both layouts emit the same
+        colour block and alert cues; they differ only in geometry.
     alert_on_exceedances:
-        When ``True`` (the default), over-allocated leaves get the existing
-        warning prefix, yellow highlight, and red border. When ``False``, those
-        negative alert cues are suppressed while the underline for leaves that
-        meet their allocation remains visible.
+        When ``True`` (the default), over-allocated leaves get the warning
+        prefix, yellow highlight, and red border. When ``False``, those negative
+        alert cues are suppressed (the ``overallocated`` style is not even
+        defined) while the per-Type fills and the within-allocation underline
+        remain visible.
 
     Returns
     -------
