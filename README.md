@@ -14,10 +14,15 @@ A 'demo' for visualizing the initial budget yaml files is added to this tool and
 `budgie.tree` builds a hierarchical budget tree from a flat table of terms and
 renders it as plain-text ASCII, as a colour-coded LaTeX/TikZ figure, or inline in
 a notebook via `display_tree`. The TikZ renderers colour each node by its `Type`
-and flag over-allocated leaves (`CBE > Allocation`) with a red border, a `△!`
-prefix, and a yellow highlight, while underlining leaves that stay within
-allocation. This colour scheme is the one consumed by the exposure-time-calculator
-budget figures in [`schmidt_ESP_template`](https://github.com/douglase/schmidt_ESP_template).
+from a 7-colour palette, and flag over-allocated leaves (`CBE > Allocation`) with
+a red border, a `△!` prefix, and a yellow highlight, while underlining leaves that
+stay within allocation.
+
+The exposure-time-calculator budget figures in
+[`schmidt_ESP_template`](https://github.com/douglase/schmidt_ESP_template) pin this
+branch and consume the per-`Type` fill via `_tikz_style_block`/`_style_name`.
+Those two underscore-private helpers are a de facto public API for that consumer —
+see the Downstream contract section of the reference before changing them.
 
 See [Tree rendering and colour coding](docs/tree_rendering.md) for the full
 reference and [`docs/tree_rendering.ipynb`](docs/tree_rendering.ipynb) for a

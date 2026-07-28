@@ -6,6 +6,8 @@ import pandas as pd
 
 from budgie.tree import (
     BudgetTreeError,
+    _style_name,
+    _tikz_style_block,
     build_tree,
     display_tree,
     register_combine_op,
@@ -278,3 +280,75 @@ class TestTreeRendering(TestCase):
         node = build_tree(_sample_table(), config=config, default_category_combine_op="sum")
         self.assertEqual(node.combine_op, "range")
         self.assertGreater(node.value, 0)
+
+
+class TestDownstreamStyleContract(TestCase):
+    """Lock the colour-styling API that ``schmidt_ESP_template`` depends on.
+
+    Its ``budgets/exposure_time/render_tree.py`` lays the tree out itself but
+    imports ``_style_name`` and ``_tikz_style_block`` from budgie to colour it.
+    Those names are underscore-private yet are a de facto public API for that
+    consumer, so changes here must be deliberate. See ``docs/tree_rendering.md``.
+    """
+
+    def test_exposure_time_calculator_import_surface_exists(self):
+        import budgie.tree as tree_module
+
+        for name in ("BudgetNode", "_style_name", "_tikz_style_block", "build_tree", "render_ascii"):
+            self.assertTrue(hasattr(tree_module, name), f"schmidt_ESP_template imports {name}")
+
+    def test_style_name_slug_format(self):
+        self.assertEqual(_style_name("Exoplanet Host Stars"), "type_exoplanet_host_stars")
+        self.assertEqual(_style_name("Static, Coherent"), "type_static_coherent")
+
+    def test_style_block_matches_exposure_time_calculator_output(self):
+        """Reproduces the committed ``exposure_time_tree.tex`` style block exactly."""
+        types = [
+            "Exoplanet Host Stars",
+            "Benchmark",
+            "Extreme Debris Systems",
+            "Habitable Zone Disks",
+            "Warm Debris Disks",
+            "Reference Stars",
+        ]
+        records = [
+            {"Name": f"tgt_{index}", "Allocation": 10.0, "CBE": 5.0, "Type": type_name}
+            for index, type_name in enumerate(types)
+        ]
+        config = {
+            "field_map": {"cbe": "CBE", "allocation": "Allocation", "type": "Type"},
+            "category_combine_ops": {type_name: "sum" for type_name in sorted(types)},
+            "post_processing_chain": [
+                {"op": "sum", "label": "Sum of target integration times"},
+                {"op": "scalar_multiply", "factor": 1.0 / 0.9, "label": "Wall-clock budget"},
+            ],
+        }
+        node = build_tree(records, config=config)
+
+        expected = (
+            "\\tikzset{\n"
+            "type_rollup/.style={fill=blue!15},\n"
+            "type_scalar/.style={fill=green!15},\n"
+            "type_exoplanet_host_stars/.style={fill=orange!20},\n"
+            "type_benchmark/.style={fill=purple!15},\n"
+            "type_extreme_debris_systems/.style={fill=teal!15},\n"
+            "type_habitable_zone_disks/.style={fill=gray!20},\n"
+            "type_warm_debris_disks/.style={fill=cyan!15},\n"
+            # An 8th type wraps the 7-colour palette back to the 1st colour.
+            "type_reference_stars/.style={fill=blue!15},\n"
+            "}\n"
+        )
+        self.assertEqual(_tikz_style_block(node, False), expected)
+
+    def test_style_block_without_alerts_omits_overallocated_style(self):
+        node = build_tree(_sample_table(), config=_sample_config())
+        self.assertNotIn("overallocated", _tikz_style_block(node, False))
+        self.assertIn("overallocated", _tikz_style_block(node, True))
+
+    def test_palette_assignment_is_per_render_not_global(self):
+        """A subtree restarts the palette, so colours are not stable across figures."""
+        node = build_tree(_sample_table(), config=_sample_config())
+        subtree = node.children[0]
+
+        self.assertNotEqual(_tikz_style_block(node, False), _tikz_style_block(subtree, False))
+        self.assertIn("fill=blue!15", _tikz_style_block(subtree, False))

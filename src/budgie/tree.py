@@ -550,6 +550,12 @@ def _collect_types(node: BudgetNode) -> list[str]:
 
 
 def _style_name(type_name: str) -> str:
+    """Return the tikz style name for a ``Type`` (e.g. ``type_static_coherent``).
+
+    Underscore-private but a *de facto public API*: ``schmidt_ESP_template``'s
+    ``budgets/exposure_time/render_tree.py`` imports this directly. Changing the
+    slug format breaks that consumer's generated figures.
+    """
     raw = "".join(char.lower() if char.isalnum() else "_" for char in type_name)
     safe = "_".join(part for part in raw.split("_") if part)
     return f"type_{safe or 'unknown'}"
@@ -681,6 +687,18 @@ def _render_outline_node(
 
 
 def _tikz_style_block(node: BudgetNode, alert_on_exceedances: bool) -> str:
+    r"""Return the ``\tikzset{...}`` block defining one fill style per ``Type``.
+
+    Types are assigned palette colours by their pre-order position modulo the
+    palette length, so a given ``Type``'s colour depends on the tree being
+    rendered: subtrees restart at ``blue!15``, and an 8th type reuses the 1st
+    type's colour.
+
+    Underscore-private but a *de facto public API*: ``schmidt_ESP_template``'s
+    ``budgets/exposure_time/render_tree.py`` calls this directly (with
+    ``alert_on_exceedances=False``) to colour a tree it lays out itself.
+    Changing the signature or the emitted block's shape breaks that consumer.
+    """
     palette = [
         "blue!15",
         "green!15",
@@ -713,20 +731,25 @@ def render_tikz(
 
     Colour coding
     -------------
-    The emitted LaTeX is colour-coded (see ``docs/tree_rendering.md`` for the
-    full reference; this scheme is what ``schmidt_ESP_template`` renders):
+    The emitted LaTeX is colour-coded in two independent parts (see
+    ``docs/tree_rendering.md`` for the full reference):
 
-    * **Per-Type fill.** Every node is filled by its ``Type``. Distinct types are
-      collected in tree-walk (first-seen) order and assigned, cycling, from the
-      fixed palette ``blue!15``, ``green!15``, ``orange!20``, ``purple!15``,
-      ``teal!15``, ``gray!20``, ``cyan!15`` via one auto-generated
-      ``type_<slug>/.style={fill=...}`` per type.
-    * **Over-allocated leaf** (``CBE > Allocation``): the ``overallocated`` style
-      adds a ``draw=red, very thick`` bold border, a ``$\triangle!$`` warning
-      prefix, and a ``\colorbox{yellow!50}`` highlight on the CBE value. Leaves
-      only -- subtotals and post-processing roll-ups are never flagged.
-    * **Within-allocation leaf** (``CBE <= Allocation``): the CBE value is
-      ``\underline``d. Always applied, independent of ``alert_on_exceedances``.
+    * **Per-Type fill**, from :func:`_tikz_style_block`. Every node is filled by
+      its ``Type``, assigned positionally from the fixed palette ``blue!15``,
+      ``green!15``, ``orange!20``, ``purple!15``, ``teal!15``, ``gray!20``,
+      ``cyan!15``. Assignment is by pre-order position modulo 7, so colours are
+      *not* stable across separate renders and an 8th type reuses the 1st
+      type's colour.
+    * **Allocation cues**, from this function's label builders. An
+      over-allocated leaf (``CBE > Allocation``) gets the ``overallocated``
+      style (``draw=red, very thick`` bold border), a ``$\triangle!$`` prefix,
+      and a ``\colorbox{yellow!50}`` highlight on its CBE value. A leaf within
+      its allocation (``CBE <= Allocation``) gets an ``\underline``d CBE value,
+      independent of ``alert_on_exceedances``. Both apply to leaves only --
+      subtotals and post-processing roll-ups are never flagged.
+
+    Consumers that build their own node labels (as ``schmidt_ESP_template``
+    does) get the per-Type fill only; none of the allocation cues appear.
 
     Parameters
     ----------
