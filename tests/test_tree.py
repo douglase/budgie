@@ -352,3 +352,49 @@ class TestDownstreamStyleContract(TestCase):
 
         self.assertNotEqual(_tikz_style_block(node, False), _tikz_style_block(subtree, False))
         self.assertIn("fill=blue!15", _tikz_style_block(subtree, False))
+
+
+class TestForestLabelBracing(TestCase):
+    """forest splits ``[label, opt1, opt2]`` on top-level commas.
+
+    An unbraced label containing a comma -- which any ``Type`` or ``Name`` may
+    contain, e.g. "Static, Coherent" -- would have its tail parsed as node
+    options and fail to compile under pdflatex.
+    """
+
+    def test_forest_label_is_brace_wrapped(self):
+        node = build_tree(_sample_table(), config=_sample_config())
+        tikz = render_tikz(node, layout="forest", standalone=False)
+
+        self.assertIn("[{\\begin{tabular}", tikz)
+        self.assertNotIn("[\\begin{tabular}", tikz)
+
+    def test_comma_in_type_does_not_leak_into_options(self):
+        node = build_tree(_sample_table(), config=_sample_config())
+        tikz = render_tikz(node, layout="forest", standalone=False)
+
+        # "Static, Coherent (subtotal)" must stay inside the braced label.
+        self.assertIn("Static, Coherent (subtotal)", tikz)
+        for line in tikz.splitlines():
+            self.assertNotIn(", Coherent (subtotal)}, draw", line)
+
+
+class TestStandalonePreamble(TestCase):
+    def test_outline_standalone_loads_trees_library(self):
+        """``grow via three points`` comes from the tikz ``trees`` library.
+
+        Without ``\\usetikzlibrary{trees}`` pgfkeys rejects the key, ignores the
+        placement, and the outline silently renders as a default tikz tree.
+        """
+        node = build_tree(_sample_table(), config=_sample_config())
+        tex = render_tikz(node, layout="outline", standalone=True)
+
+        self.assertIn("\\usetikzlibrary{trees}", tex)
+        self.assertIn("grow via three points", tex)
+
+    def test_forest_standalone_loads_required_packages(self):
+        node = build_tree(_sample_table(), config=_sample_config())
+        tex = render_tikz(node, layout="forest", standalone=True)
+
+        self.assertIn("\\usepackage{forest}", tex)
+        self.assertIn("\\usepackage{xcolor}", tex)

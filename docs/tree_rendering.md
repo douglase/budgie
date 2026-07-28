@@ -53,6 +53,16 @@ The three required columns are generic — **CBE**, **Allocation**, and **Type**
 and their actual column names can be remapped through `field_map` (see the
 `build_tree` docstring).
 
+That input renders as:
+
+![Colour-coded budget tree, forest layout](images/tree_forest.png)
+
+Everything in that figure is explained below: the pale per-`Type` fills, the
+underlined CBE values on leaves that meet their allocation, and `incoherent_1`
+carrying all three over-allocation cues (red bold border, `△!` prefix, yellow
+highlight). [`tree_rendering.ipynb`](tree_rendering.ipynb) reproduces it with
+committed outputs.
+
 ## 1. Per-`Type` category fill
 
 Every node — leaf term, category subtotal, and post-processing roll-up — is
@@ -134,6 +144,13 @@ no red border, no warning triangle, no yellow highlight, and the `overallocated`
 style is not even defined. The per-`Type` fills and the within-allocation
 underline are unaffected.
 
+![Same tree with alerts disabled](images/tree_forest_no_alerts.png)
+
+Compared with the figure above, `incoherent_1` has lost its red border, `△!`
+prefix, and yellow highlight, but keeps its `Type` fill — and the underlines on
+the within-allocation leaves are untouched. This is the flag the exposure-time
+calculator passes.
+
 ### Summary table
 
 | Condition                  | Applies to | Cue                                        | Emitted by         | Suppressed by `alert_on_exceedances=False`? |
@@ -184,6 +201,13 @@ only in geometry:
 - **`outline`** — a directory-style indented outline (uses a plain
   `tikzpicture`); combine-operation edge labels are drawn in gray.
 
+> **Known limitation of `outline`.** It positions children with tikz's
+> `grow via three points`, which places them at *fixed* offsets and cannot
+> account for varying subtree heights. Nested subtrees with wide labels
+> therefore overlap. For production figures, compute node coordinates
+> explicitly — this is precisely why `schmidt_ESP_template` lays out its own
+> outline instead of using this one. The `forest` layout has no such issue.
+
 ## Which fields are shown
 
 `show` selects the numeric fields printed inside each node:
@@ -198,11 +222,16 @@ they are visible only when CBE is shown (`"both"` or `"cbe"`).
 
 ## Required LaTeX packages
 
-Standalone output from `render_tikz(..., standalone=True)` pulls in `forest` and
-`xcolor`. When embedding a fragment (`standalone=False`) into a larger document —
-as `schmidt_ESP_template` does — that host document must load `forest` and
-`xcolor` itself. The palette and highlights rely only on base `xcolor` percentage
-mixing (`blue!15`, `yellow!50`, …), so no `xcolor` package options are required.
+Standalone output from `render_tikz(..., standalone=True)` pulls in `forest`,
+`xcolor`, and `\usetikzlibrary{trees}` (the last provides
+`grow via three points`, which the `outline` layout requires — without it
+pgfkeys rejects the key, silently ignores the placement, and the outline
+degrades to a default tikz tree).
+
+When embedding a fragment (`standalone=False`) into a larger document — as
+`schmidt_ESP_template` does — that host document must load all three itself. The
+palette and highlights rely only on base `xcolor` percentage mixing (`blue!15`,
+`yellow!50`, …), so no `xcolor` package options are required.
 
 ## Plain-text renderer
 

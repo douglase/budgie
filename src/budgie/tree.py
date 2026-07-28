@@ -650,7 +650,13 @@ def _render_forest_node(
     # the rendered strings of its children, so one function handles the entire
     # tree regardless of depth.
     children = "".join(_render_forest_node(child, show, alert_on_exceedances, node.op_label) for child in node.children)
-    return f"[{_node_label_forest(node, show, alert_on_exceedances)}, {', '.join(options)}{children}]"
+    # The label MUST be brace-wrapped. forest parses ``[label, opt1, opt2]`` by
+    # splitting on top-level commas, so an unbraced label containing a comma
+    # (e.g. the Type "Static, Coherent") would have its tail parsed as options
+    # and fail to compile. The outline renderer is unaffected because tikz's
+    # ``node[opts]{label}`` already delimits the label with braces.
+    label = _node_label_forest(node, show, alert_on_exceedances)
+    return f"[{{{label}}}, {', '.join(options)}{children}]"
 
 
 def _render_outline_node(
@@ -810,7 +816,7 @@ def render_tikz(
             # ``grow via three points`` tells tikz where to place the first and
             # later children so the tree reads like an indented outline rather
             # than a centered org chart.
-            + "grow via three points={one child at (0,-0.9) and two children at (0,-0.9) and (10em,-0.9)},\n"
+            + "grow via three points={one child at (1em,-1.1) and two children at (1em,-1.1) and (1em,-2.2)},\n"
             # In tikz path syntax, ``|-`` means "go vertically, then turn and go
             # horizontally". That creates the elbow-style connector seen in many
             # directory trees.
@@ -832,6 +838,11 @@ def render_tikz(
         "\\documentclass[tikz,border=5pt]{standalone}\n"
         "\\usepackage{forest}\n"
         "\\usepackage{xcolor}\n"
+        # The ``trees`` tikz library provides ``grow via three points``, which the
+        # outline layout relies on. Without it pgfkeys reports an unknown key,
+        # silently ignores the placement, and the outline renders as a default
+        # tikz tree. Embedders of ``standalone=False`` fragments must load it too.
+        "\\usetikzlibrary{trees}\n"
         "\\begin{document}\n"
         f"{body}"
         "\\end{document}\n"
