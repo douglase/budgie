@@ -1,0 +1,138 @@
+% ESC red-arm contrast budget --- term descriptions
+%
+% Generated from budgets_esc PR #3 (kvangorkom/refactor), using the FINAL
+% post-overlay values: esc_red_input.yaml + esc_red_input_dev.yaml, which
+% match the committed esc_red_output.yaml. Total CBE 7.42e-09 against
+% 1.57e-08 of summed leaf allocation.
+%
+% Each \subsection is a system/type group; each \subsubsection is a leaf term.
+% The commented "YAML:" line is the existing one-line description from the
+% budget file -- expand it into prose and delete the comment.
+%
+% Numbers are in comments so the prose stays clean; uncomment or re-format
+% them if the document should typeset the values.
+
+\subsection{Telescope --- static}
+\label{sec:telescope-static}
+% subtotal: CBE 1.51e-10, allocation 4.50e-08
+% YAML: Roll up of dynamic telescope terms
+
+
+\subsubsection{\texttt{efc\_chromatic\_residuals}}
+\label{sec:telescope-static-efc-chromatic-residuals}
+% CBE 3.06e-11, allocation 3.00e-09
+% YAML: Post-EFC contrast floor in 2% bandwidth, telescope optics only
+
+
+\subsubsection{\texttt{polarization\_aberrations}}
+\label{sec:telescope-static-polarization-aberrations}
+% CBE 1.00e-10, allocation 5.00e-10
+% YAML: Contrast floor due to telescope polarization aberrations
+
+
+\subsubsection{\texttt{scattering}}
+\label{sec:telescope-static-scattering}
+% CBE 1.00e-11, allocation 5.00e-11
+% YAML: Contrast floor due to scattering from telescope optics surface roughness (in field)
+
+
+\subsubsection{\texttt{stray\_light}}
+\label{sec:telescope-static-stray-light}
+% CBE 1.00e-11, allocation 1.00e-11   <<< at allocation, zero margin
+% YAML: Out of field stray light, telescope + ESC. This assumes some astrophysical scene (stellar source distribution and zodiacal light).
+
+
+\subsection{Telescope --- dynamic}
+\label{sec:telescope-dynamic}
+% subtotal: CBE 2.00e-09, allocation 4.50e-08
+% YAML: Roll up of static telescope terms
+
+
+\subsubsection{\texttt{howfsc\_residuals}}
+\label{sec:telescope-dynamic-howfsc-residuals}
+% CBE 1.00e-09, allocation 1.00e-09   <<< at allocation, zero margin
+% YAML: High-order residuals after HOWFS&C loop, X mag star. Telescope thermal and LOS pointing error, LLOWFS&C residuals filtered out.
+
+
+\subsubsection{\texttt{llowfsc\_residuals}}
+\label{sec:telescope-dynamic-llowfsc-residuals}
+% CBE 1.00e-09, allocation 3.00e-09
+% YAML: Low-order residuals after LLOWFS&C loop, X mag star. Telescope thermal and LOS pointing error, without HOWFS&C. Note that this includes beamwalk on ESC optics (due to telescope LOS error).
+
+
+\subsection{ESC --- static}
+\label{sec:esc-static}
+% subtotal: CBE 1.27e-09, allocation 5.00e-09
+% YAML: Roll up of static ESC terms
+
+
+\subsubsection{\texttt{efc\_chromatic\_residuals}}
+\label{sec:esc-static-efc-chromatic-residuals}
+% CBE 6.25e-10, allocation 3.00e-09
+% YAML: Post-EFC contrast floor in 2% bandwidth, ESC optics only
+
+
+\subsubsection{\texttt{polarization\_aberrations}}
+\label{sec:esc-static-polarization-aberrations}
+% CBE 1.00e-10, allocation 5.00e-10
+% YAML: Contrast floor due to ESC polarization aberrations
+
+
+\subsubsection{\texttt{scattering}}
+\label{sec:esc-static-scattering}
+% CBE 1.00e-11, allocation 5.00e-11
+% YAML: Contrast floor due to scattering from ESC optics surface roughness (in field)
+
+
+\subsubsection{\texttt{vvc\_filtering\_leakage}}
+\label{sec:esc-static-vvc-filtering-leakage}
+% CBE 1.51e-10, allocation 1.00e-10   <<< OVER ALLOCATION
+% YAML: Imperfect polarization filtering due to VVC retardance error, QWP retardance errors, and finite LP extinction.
+
+
+\subsubsection{\texttt{pixel\_crosstalk}}
+\label{sec:esc-static-pixel-crosstalk}
+% CBE 1.00e-11, allocation 1.00e-10
+% YAML: placeholder
+
+
+\subsubsection{\texttt{dm\_quantization}}
+\label{sec:esc-static-dm-quantization}
+% CBE 3.19e-11, allocation 1.00e-10
+% YAML: DM quantization error
+
+
+\subsubsection{\texttt{dm\_voltage\_noise}}
+\label{sec:esc-static-dm-voltage-noise}
+% CBE 2.36e-10, allocation 1.00e-10   <<< OVER ALLOCATION
+% YAML: DM electronics noise, electronics design and cable interference.
+
+
+\subsubsection{\texttt{ghosts}}
+\label{sec:esc-static-ghosts}
+% CBE 1.00e-11, allocation 1.00e-10
+% YAML: Ghost PSFs due to back reflections on transmissive optics within the ESC.
+
+
+\subsubsection{\texttt{resolved\_source\_leakage}}
+\label{sec:esc-static-resolved-source-leakage}
+% CBE 1.00e-10, allocation 1.00e-10   <<< at allocation, zero margin
+% YAML: Update me to match some fiducial case! 8mas star (~0.15 $\lambda/D$). VVC-6 x4 to cushion s=0.1$\lambda/D$ value from table.
+
+
+\subsection{ESC --- dynamic}
+\label{sec:esc-dynamic}
+% subtotal: CBE 4.00e-09, allocation 5.00e-09
+% YAML: Roll up of dynamic ESC terms
+
+
+\subsubsection{\texttt{howfsc\_residuals}}
+\label{sec:esc-dynamic-howfsc-residuals}
+% CBE 1.00e-09, allocation 1.00e-09   <<< at allocation, zero margin
+% YAML: High-order residuals after HOWFS&C loop, X mag star. ESC thermal and microvibe environment, LLOWFS&C residuals filtered out.
+
+
+\subsubsection{\texttt{llowfs\_residuals}}
+\label{sec:esc-dynamic-llowfs-residuals}
+% CBE 3.00e-09, allocation 3.00e-09   <<< at allocation, zero margin
+% YAML: Low-order residuals after LLOWFS&C loop, X mag star. ESC thermal and microvibe environment, without HOWFS&C.
