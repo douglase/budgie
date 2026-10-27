@@ -5,10 +5,10 @@
 % deluxetable are used. Note aastex631 does NOT load amsmath, so this file
 % deliberately avoids align/eqref/text.
 %
-% Provenance. Only three of the seventeen leaf terms are computed from a model;
-% the other fourteen are CBEs entered directly in the budget YAML from external
-% analyses (Fresnel propagations, stray-light models, etc.) and have no equation
-% in this repository.
+% Arm: LONGWAVE (esc_longwave.yaml). Only three of its eighteen leaf terms are
+% computed from a model; the other fifteen are CBEs entered directly in the
+% budget YAML from external analyses (Fresnel propagations, stray-light models,
+% etc.) and have no equation in this repository.
 %
 % The three models live in contrast_budget.py on the PRE-REFACTOR branch
 % (claude/practical-lovelace-saw51w): calc_dm_quantization, calc_dm_noise and
@@ -102,7 +102,7 @@ stroke $h_{\min} = g\,V_{\mathrm{LSB}}$ and a contrast floor
 The leading factor of 2 is an empirical correction, noted in the source as
 Ruane's factor-of-two discrepancy between model and measurement.
 
-\subsection{\texttt{dm\_voltage\_noise}}
+\subsection{\texttt{dm\_noise}}
 
 Identical in form, with the RMS drive noise $V_{\mathrm{noise}}$ in place of the
 quantization step, $h_{\mathrm{noise}} = g\,V_{\mathrm{noise}}$:
@@ -116,7 +116,7 @@ quantization step, $h_{\mathrm{noise}} = g\,V_{\mathrm{noise}}$:
   \label{eq:cnoise}
 \end{equation}
 
-\subsection{\texttt{vvc\_filtering\_leakage}}
+\subsection{\texttt{vvc\_leakage}}
 
 Imperfect polarization filtering leaks starlight past the vector vortex
 coronagraph. Retardance errors on the VVC ($\epsilon_v$) and quarter-wave plate
@@ -175,17 +175,17 @@ Table~\ref{tab:contrast-symbols} collects the symbols used above together with
 the parameter values the models were last evaluated with.
 
 \begin{deluxetable}{llr}
-  \tablecaption{Parameters of the computed contrast terms.\label{tab:contrast-symbols}}
+  \tablecaption{Parameters of the computed contrast terms, longwave arm.\label{tab:contrast-symbols}}
   \tablehead{\colhead{Symbol} & \colhead{Meaning} & \colhead{Value}}
   \startdata
-  $N_{\mathrm{act}}$      & actuators across the beam on the DM   & 30 \\
+  $N_{\mathrm{act}}$      & actuators across the beam on the DM   & 45 \\
   $\omega$                & actuator radius-to-pitch ratio        & 0.82 \\
   $\gamma$                & Lyot-stop fraction                    & 0.95 \\
   $g$                     & DM gain (stroke per volt)             & $8.95$\,nm/V \\
   $b$                     & DAC bit depth                         & 16 \\
   $V_{\mathrm{range}}$    & DM full-scale drive voltage           & $195$\,V \\
   $V_{\mathrm{noise}}$    & DM drive noise, RMS                   & $2.0$\,mV \\
-  $\lambda$               & design wavelength                     & $475$\,nm \\
+  $\lambda$               & design wavelength                     & $630$\,nm \\
   IWA, OWA                & dark-hole inner/outer working angle   & 3, 10 $\lambda/D$ \\
   $\gamma^{2}$            & linear-polarizer intensity extinction & $10^{4}$ \\
   $\epsilon_v$            & VVC retardance error                  & $2.0^{\circ}$ \\
@@ -193,19 +193,24 @@ the parameter values the models were last evaluated with.
   $g_{\mathrm{pp}}$       & post-processing gain                  & 0.1 \\
   $n_\sigma$              & detection threshold                   & 5
   \enddata
-  \tablecomments{Values are from \texttt{esc\_shortwave.yaml}, the only
-  parameter set still present in the repository; the red-arm budget carries no
-  \texttt{dm}/\texttt{dh}/\texttt{vvc} blocks, so the inputs behind its frozen
-  values are not recorded.}
+  \tablecomments{Values are the longwave set, from
+  \texttt{esc\_longwave.yaml}. Only $N_{\mathrm{act}}$ and $\lambda$ differ
+  from the shortwave set ($30$, $475$\,nm). Note that PR~\#3 deletes
+  \texttt{esc\_longwave.yaml} along with the three models, and the red-arm
+  budget that replaces it carries no \texttt{dm}/\texttt{dh}/\texttt{vvc}
+  blocks at all, so the inputs behind its frozen values are not recorded.}
 \end{deluxetable}
 
 \subsection{Terms without a model}
 
-The remaining fourteen leaves carry CBEs entered directly in the budget YAML:
-\texttt{efc\_chromatic\_residuals}, \texttt{polarization\_aberrations},
-\texttt{scattering} and \texttt{stray\_light} (telescope and ESC static);
-\texttt{pixel\_crosstalk}, \texttt{ghosts} and
-\texttt{resolved\_source\_leakage} (ESC static); and
-\texttt{howfsc\_residuals} / \texttt{llowfsc\_residuals} (telescope and ESC
-dynamic). Per the convention note at the head of the budget file, each should
-cite the external analysis it came from in its \texttt{description}.
+The longwave budget has eighteen leaves; the three above are computed, and the
+remaining fifteen carry CBEs entered directly in the budget YAML:
+\texttt{efc\_chromatic\_residuals} (static, coherent);
+\texttt{scattering}, \texttt{stray\_light}, \texttt{polarization},
+\texttt{stellar\_angular\_size}, \texttt{companion}, \texttt{exozodii},
+\texttt{ghosts} and \texttt{pixel\_crosstalk} (static, incoherent); and
+\texttt{beamwalk}, \texttt{jitter}, \texttt{llowfs\_residuals},
+\texttt{howfs\_residuals}, \texttt{dm\_cable\_interference} and
+\texttt{segment\_modes} (dynamic). Per the convention note at the head of the
+budget file, each should cite the external analysis it came from in its
+\texttt{description}.
