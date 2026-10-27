@@ -1,6 +1,9 @@
 % ESC contrast budget --- driving equations
 %
-% Requires: \usepackage{amsmath, booktabs}  (no siunitx needed)
+% For AASTeX (compiles clean against aastex631, one- and two-column).
+% No extra packages required: only base LaTeX constructs and the class's own
+% deluxetable are used. Note aastex631 does NOT load amsmath, so this file
+% deliberately avoids align/eqref/text.
 %
 % Provenance. Only three of the seventeen leaf terms are computed from a model;
 % the other fourteen are CBEs entered directly in the budget YAML from external
@@ -63,17 +66,19 @@ the annulus-averaged factor is
   \label{eq:phi}
 \end{equation}
 %
-Equation~\eqref{eq:phi} is evaluated numerically on a 1000-point grid in
+Equation~(\ref{eq:phi}) is evaluated numerically on a 1000-point grid in
 $\alpha$. The corresponding reference stroke amplitudes are
 %
-\begin{align}
-  h_0^{\mathrm{quant}} &= \sqrt{\frac{3}{16\pi}}\;
-    \frac{N_{\mathrm{act}}\,\lambda}{\pi\,\omega^2\,\sqrt{\varphi}},
-  \label{eq:h0quant} \\[2pt]
-  h_0^{\mathrm{noise}} &= \sqrt{\frac{1}{64\pi}}\;
+\begin{equation}
+  h_0^{\mathrm{quant}} \;=\; \sqrt{\frac{3}{16\pi}}\;
+    \frac{N_{\mathrm{act}}\,\lambda}{\pi\,\omega^2\,\sqrt{\varphi}} ,
+  \label{eq:h0quant}
+\end{equation}
+\begin{equation}
+  h_0^{\mathrm{noise}} \;=\; \sqrt{\frac{1}{64\pi}}\;
     \frac{N_{\mathrm{act}}\,\lambda}{\pi\,\omega^2\,\sqrt{\varphi}} .
   \label{eq:h0noise}
-\end{align}
+\end{equation}
 %
 The two differ only in the leading constant ($3/16\pi$ versus $0.25/16\pi$ as
 coded), which carries the difference between a quantization error uniformly
@@ -119,7 +124,7 @@ coronagraph. Retardance errors on the VVC ($\epsilon_v$) and quarter-wave plate
 $\gamma^2$, give an on-axis leaked fraction
 %
 \begin{equation}
-  C_{\mathrm{leak}}^{\mathrm{on\text{-}axis}}
+  C_{\mathrm{leak},0}
   \;=\;
   \frac{1}{\gamma^{2}}
   \left(\frac{\epsilon_v^{2}}{4} + \epsilon_q^{2}\right).
@@ -127,7 +132,7 @@ $\gamma^2$, give an on-axis leaked fraction
 \end{equation}
 %
 That leaked light is not flat across the field: it carries the stellar PSF. The
-budgeted term is \eqref{eq:leakonaxis} scaled by the normalized Airy pattern
+budgeted term is (\ref{eq:leakonaxis}) scaled by the normalized Airy pattern
 averaged over the dark hole,
 %
 \begin{equation}
@@ -135,7 +140,7 @@ averaged over the dark hole,
   \;=\;
   \big\langle A(\alpha) \big\rangle_{\mathrm{IWA} \le \alpha \le \mathrm{OWA}}
   \cdot
-  C_{\mathrm{leak}}^{\mathrm{on\text{-}axis}} ,
+  C_{\mathrm{leak},0} ,
   \label{eq:cvvc}
 \end{equation}
 %
@@ -144,52 +149,55 @@ $1024 \times 1024$ grid via \texttt{poppy.misc.airy\_2d}.
 
 \subsection{Inverse forms used for requirements}
 
-\texttt{requirements/derive\_avionics\_l4.py} inverts \eqref{eq:cquant} and
-\eqref{eq:cnoise} to turn a contrast allocation $A$ into a hardware limit:
+\texttt{requirements/derive\_avionics\_l4.py} inverts (\ref{eq:cquant}) and
+(\ref{eq:cnoise}) to turn a contrast allocation $A$ into a hardware limit:
 %
-\begin{align}
-  V_{\mathrm{noise}}^{\max} &= \sqrt{\frac{A_{\mathrm{noise}}}{2}}\;
-    \frac{h_0^{\mathrm{noise}}}{g},
-  \label{eq:vnoisemax} \\[2pt]
-  V_{\mathrm{LSB}}^{\max} &= \sqrt{\frac{A_{\mathrm{quant}}}{2}}\;
-    \frac{h_0^{\mathrm{quant}}}{g},
-  \label{eq:vlsbmax} \\[2pt]
-  b_{\mathrm{needed}} &= \left\lceil
+\begin{equation}
+  V_{\mathrm{noise}}^{\max} \;=\; \sqrt{\frac{A_{\mathrm{noise}}}{2}}\;
+    \frac{h_0^{\mathrm{noise}}}{g} ,
+  \label{eq:vnoisemax}
+\end{equation}
+\begin{equation}
+  V_{\mathrm{LSB}}^{\max} \;=\; \sqrt{\frac{A_{\mathrm{quant}}}{2}}\;
+    \frac{h_0^{\mathrm{quant}}}{g} ,
+  \label{eq:vlsbmax}
+\end{equation}
+\begin{equation}
+  b_{\mathrm{needed}} \;=\; \left\lceil
     \log_2\!\left(\frac{V_{\mathrm{range}}}{V_{\mathrm{LSB}}^{\max}}\right)
     \right\rceil .
   \label{eq:bits}
-\end{align}
+\end{equation}
 
 \subsection{Symbols}
 
-\begin{table}[h!]
-  \centering
-  \begin{tabular}{llr}
-    \toprule
-    Symbol & Meaning & Value \\
-    \midrule
-    $N_{\mathrm{act}}$      & actuators across the beam on the DM   & 30 \\
-    $\omega$                & actuator radius-to-pitch ratio        & 0.82 \\
-    $\gamma$                & Lyot-stop fraction                    & 0.95 \\
-    $g$                     & DM gain (stroke per volt)             & $8.95$\,nm/V \\
-    $b$                     & DAC bit depth                         & 16 \\
-    $V_{\mathrm{range}}$    & DM full-scale drive voltage           & $195$\,V \\
-    $V_{\mathrm{noise}}$    & DM drive noise, RMS                   & $2.0$\,mV \\
-    $\lambda$               & design wavelength                     & $475$\,nm \\
-    IWA, OWA                & dark-hole inner/outer working angle   & 3, 10 $\lambda/D$ \\
-    $\gamma^{2}$            & linear-polarizer intensity extinction & $10^{4}$ \\
-    $\epsilon_v$            & VVC retardance error                  & $2.0^{\circ}$ \\
-    $\epsilon_q$            & QWP retardance error                  & $3.0^{\circ}$ \\
-    $g_{\mathrm{pp}}$       & post-processing gain                  & 0.1 \\
-    $n_\sigma$              & detection threshold                   & 5 \\
-    \bottomrule
-  \end{tabular}
-  \caption{Parameters of the computed contrast terms. Values are from
-  \texttt{esc\_shortwave.yaml}, the only parameter set still present in the
-  repository; the red-arm budget carries no \texttt{dm}/\texttt{dh}/\texttt{vvc}
-  blocks, so the inputs behind its frozen values are not recorded.}
-  \label{tab:contrast-symbols}
-\end{table}
+Table~\ref{tab:contrast-symbols} collects the symbols used above together with
+the parameter values the models were last evaluated with.
+
+\begin{deluxetable}{llr}
+  \tablecaption{Parameters of the computed contrast terms.\label{tab:contrast-symbols}}
+  \tablehead{\colhead{Symbol} & \colhead{Meaning} & \colhead{Value}}
+  \startdata
+  $N_{\mathrm{act}}$      & actuators across the beam on the DM   & 30 \\
+  $\omega$                & actuator radius-to-pitch ratio        & 0.82 \\
+  $\gamma$                & Lyot-stop fraction                    & 0.95 \\
+  $g$                     & DM gain (stroke per volt)             & $8.95$\,nm/V \\
+  $b$                     & DAC bit depth                         & 16 \\
+  $V_{\mathrm{range}}$    & DM full-scale drive voltage           & $195$\,V \\
+  $V_{\mathrm{noise}}$    & DM drive noise, RMS                   & $2.0$\,mV \\
+  $\lambda$               & design wavelength                     & $475$\,nm \\
+  IWA, OWA                & dark-hole inner/outer working angle   & 3, 10 $\lambda/D$ \\
+  $\gamma^{2}$            & linear-polarizer intensity extinction & $10^{4}$ \\
+  $\epsilon_v$            & VVC retardance error                  & $2.0^{\circ}$ \\
+  $\epsilon_q$            & QWP retardance error                  & $3.0^{\circ}$ \\
+  $g_{\mathrm{pp}}$       & post-processing gain                  & 0.1 \\
+  $n_\sigma$              & detection threshold                   & 5
+  \enddata
+  \tablecomments{Values are from \texttt{esc\_shortwave.yaml}, the only
+  parameter set still present in the repository; the red-arm budget carries no
+  \texttt{dm}/\texttt{dh}/\texttt{vvc} blocks, so the inputs behind its frozen
+  values are not recorded.}
+\end{deluxetable}
 
 \subsection{Terms without a model}
 
