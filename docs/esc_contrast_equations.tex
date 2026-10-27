@@ -1,0 +1,203 @@
+% ESC contrast budget --- driving equations
+%
+% Requires: \usepackage{amsmath, booktabs}  (no siunitx needed)
+%
+% Provenance. Only three of the seventeen leaf terms are computed from a model;
+% the other fourteen are CBEs entered directly in the budget YAML from external
+% analyses (Fresnel propagations, stray-light models, etc.) and have no equation
+% in this repository.
+%
+% The three models live in contrast_budget.py on the PRE-REFACTOR branch
+% (claude/practical-lovelace-saw51w): calc_dm_quantization, calc_dm_noise and
+% calc_vvc_leakage, dispatched from calc_terms(). They are restated, with their
+% inverse forms, in requirements/derive_avionics_l4.py.
+%
+% NOTE: PR #3 (kvangorkom/refactor) removes all three methods and the dm/dh/vvc
+% parameter blocks they read. On that branch the three terms are frozen numeric
+% CBEs and the equations below have no code left to drive them.
+
+\subsection{Budget-level relations}
+
+Every parent node is the plain sum of its children (\texttt{roll\_up\_terms}),
+and margin is the signed slack against the allocation:
+%
+\begin{equation}
+  C_{\mathrm{parent}} \;=\; \sum_{i \in \mathrm{children}} C_i ,
+  \qquad
+  M \;=\; A - C .
+  \label{eq:rollup}
+\end{equation}
+%
+Note this is a \emph{linear} sum, not a root-sum-square. The raw total is then
+reduced by the post-processing gain and scaled to a detection threshold
+(\texttt{get\_total\_contrast}):
+%
+\begin{equation}
+  C_{\mathrm{pp}} \;=\; g_{\mathrm{pp}}\, C_{\mathrm{raw}} ,
+  \qquad
+  C_{n\sigma} \;=\; n_\sigma\, C_{\mathrm{pp}} ,
+  \label{eq:postproc}
+\end{equation}
+%
+with $g_{\mathrm{pp}} = 0.1$ and $n_\sigma = 5$.
+
+\subsection{Dark-hole averaging factor}
+
+Both deformable-mirror terms share a geometric factor: the influence-function
+rolloff $e^{-(\alpha/\alpha_{\mathrm{inf}})^2}$ averaged over the dark-hole
+annulus. With the influence cutoff
+%
+\begin{equation}
+  \alpha_{\mathrm{inf}} \;=\; \frac{\sqrt{2}\, N_{\mathrm{act}}}{2\pi\,\omega\,\gamma},
+  \label{eq:alphainf}
+\end{equation}
+%
+the annulus-averaged factor is
+%
+\begin{equation}
+  \varphi
+  \;=\;
+  \frac{2}{\mathrm{OWA}^2 - \mathrm{IWA}^2}
+  \int_{\mathrm{IWA}}^{\mathrm{OWA}}
+  \alpha \, e^{-(\alpha/\alpha_{\mathrm{inf}})^2} \, \mathrm{d}\alpha .
+  \label{eq:phi}
+\end{equation}
+%
+Equation~\eqref{eq:phi} is evaluated numerically on a 1000-point grid in
+$\alpha$. The corresponding reference stroke amplitudes are
+%
+\begin{align}
+  h_0^{\mathrm{quant}} &= \sqrt{\frac{3}{16\pi}}\;
+    \frac{N_{\mathrm{act}}\,\lambda}{\pi\,\omega^2\,\sqrt{\varphi}},
+  \label{eq:h0quant} \\[2pt]
+  h_0^{\mathrm{noise}} &= \sqrt{\frac{1}{64\pi}}\;
+    \frac{N_{\mathrm{act}}\,\lambda}{\pi\,\omega^2\,\sqrt{\varphi}} .
+  \label{eq:h0noise}
+\end{align}
+%
+The two differ only in the leading constant ($3/16\pi$ versus $0.25/16\pi$ as
+coded), which carries the difference between a quantization error uniformly
+distributed over one least-significant bit and a Gaussian noise amplitude.
+
+\subsection{\texttt{dm\_quantization}}
+
+Finite DAC resolution quantizes the DM command. One least-significant bit spans
+$V_{\mathrm{LSB}} = V_{\mathrm{range}}/2^{b}$, giving a minimum commandable
+stroke $h_{\min} = g\,V_{\mathrm{LSB}}$ and a contrast floor
+%
+\begin{equation}
+  C_{\mathrm{quant}}
+  \;=\;
+  2\left(\frac{h_{\min}}{h_0^{\mathrm{quant}}}\right)^{\!2}
+  \;=\;
+  2\left(\frac{g\,V_{\mathrm{range}}}{2^{b}\,h_0^{\mathrm{quant}}}\right)^{\!2} .
+  \label{eq:cquant}
+\end{equation}
+%
+The leading factor of 2 is an empirical correction, noted in the source as
+Ruane's factor-of-two discrepancy between model and measurement.
+
+\subsection{\texttt{dm\_voltage\_noise}}
+
+Identical in form, with the RMS drive noise $V_{\mathrm{noise}}$ in place of the
+quantization step, $h_{\mathrm{noise}} = g\,V_{\mathrm{noise}}$:
+%
+\begin{equation}
+  C_{\mathrm{noise}}
+  \;=\;
+  2\left(\frac{h_{\mathrm{noise}}}{h_0^{\mathrm{noise}}}\right)^{\!2}
+  \;=\;
+  2\left(\frac{g\,V_{\mathrm{noise}}}{h_0^{\mathrm{noise}}}\right)^{\!2} .
+  \label{eq:cnoise}
+\end{equation}
+
+\subsection{\texttt{vvc\_filtering\_leakage}}
+
+Imperfect polarization filtering leaks starlight past the vector vortex
+coronagraph. Retardance errors on the VVC ($\epsilon_v$) and quarter-wave plate
+($\epsilon_q$), both in radians, against a linear-polarizer intensity extinction
+$\gamma^2$, give an on-axis leaked fraction
+%
+\begin{equation}
+  C_{\mathrm{leak}}^{\mathrm{on\text{-}axis}}
+  \;=\;
+  \frac{1}{\gamma^{2}}
+  \left(\frac{\epsilon_v^{2}}{4} + \epsilon_q^{2}\right).
+  \label{eq:leakonaxis}
+\end{equation}
+%
+That leaked light is not flat across the field: it carries the stellar PSF. The
+budgeted term is \eqref{eq:leakonaxis} scaled by the normalized Airy pattern
+averaged over the dark hole,
+%
+\begin{equation}
+  C_{\mathrm{vvc}}
+  \;=\;
+  \big\langle A(\alpha) \big\rangle_{\mathrm{IWA} \le \alpha \le \mathrm{OWA}}
+  \cdot
+  C_{\mathrm{leak}}^{\mathrm{on\text{-}axis}} ,
+  \label{eq:cvvc}
+\end{equation}
+%
+where $A(\alpha)$ is the peak-normalized Airy intensity, evaluated on a
+$1024 \times 1024$ grid via \texttt{poppy.misc.airy\_2d}.
+
+\subsection{Inverse forms used for requirements}
+
+\texttt{requirements/derive\_avionics\_l4.py} inverts \eqref{eq:cquant} and
+\eqref{eq:cnoise} to turn a contrast allocation $A$ into a hardware limit:
+%
+\begin{align}
+  V_{\mathrm{noise}}^{\max} &= \sqrt{\frac{A_{\mathrm{noise}}}{2}}\;
+    \frac{h_0^{\mathrm{noise}}}{g},
+  \label{eq:vnoisemax} \\[2pt]
+  V_{\mathrm{LSB}}^{\max} &= \sqrt{\frac{A_{\mathrm{quant}}}{2}}\;
+    \frac{h_0^{\mathrm{quant}}}{g},
+  \label{eq:vlsbmax} \\[2pt]
+  b_{\mathrm{needed}} &= \left\lceil
+    \log_2\!\left(\frac{V_{\mathrm{range}}}{V_{\mathrm{LSB}}^{\max}}\right)
+    \right\rceil .
+  \label{eq:bits}
+\end{align}
+
+\subsection{Symbols}
+
+\begin{table}[h!]
+  \centering
+  \begin{tabular}{llr}
+    \toprule
+    Symbol & Meaning & Value \\
+    \midrule
+    $N_{\mathrm{act}}$      & actuators across the beam on the DM   & 30 \\
+    $\omega$                & actuator radius-to-pitch ratio        & 0.82 \\
+    $\gamma$                & Lyot-stop fraction                    & 0.95 \\
+    $g$                     & DM gain (stroke per volt)             & $8.95$\,nm/V \\
+    $b$                     & DAC bit depth                         & 16 \\
+    $V_{\mathrm{range}}$    & DM full-scale drive voltage           & $195$\,V \\
+    $V_{\mathrm{noise}}$    & DM drive noise, RMS                   & $2.0$\,mV \\
+    $\lambda$               & design wavelength                     & $475$\,nm \\
+    IWA, OWA                & dark-hole inner/outer working angle   & 3, 10 $\lambda/D$ \\
+    $\gamma^{2}$            & linear-polarizer intensity extinction & $10^{4}$ \\
+    $\epsilon_v$            & VVC retardance error                  & $2.0^{\circ}$ \\
+    $\epsilon_q$            & QWP retardance error                  & $3.0^{\circ}$ \\
+    $g_{\mathrm{pp}}$       & post-processing gain                  & 0.1 \\
+    $n_\sigma$              & detection threshold                   & 5 \\
+    \bottomrule
+  \end{tabular}
+  \caption{Parameters of the computed contrast terms. Values are from
+  \texttt{esc\_shortwave.yaml}, the only parameter set still present in the
+  repository; the red-arm budget carries no \texttt{dm}/\texttt{dh}/\texttt{vvc}
+  blocks, so the inputs behind its frozen values are not recorded.}
+  \label{tab:contrast-symbols}
+\end{table}
+
+\subsection{Terms without a model}
+
+The remaining fourteen leaves carry CBEs entered directly in the budget YAML:
+\texttt{efc\_chromatic\_residuals}, \texttt{polarization\_aberrations},
+\texttt{scattering} and \texttt{stray\_light} (telescope and ESC static);
+\texttt{pixel\_crosstalk}, \texttt{ghosts} and
+\texttt{resolved\_source\_leakage} (ESC static); and
+\texttt{howfsc\_residuals} / \texttt{llowfsc\_residuals} (telescope and ESC
+dynamic). Per the convention note at the head of the budget file, each should
+cite the external analysis it came from in its \texttt{description}.
