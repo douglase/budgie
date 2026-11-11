@@ -6,6 +6,7 @@ except ModuleNotFoundError:  # pragma: no cover - fallback for editable/source u
     __version__ = "0+unknown"
 
 from budgie.core import (
+    DMStroke,
     MissionLifetime,
     TransientResponse,
     WaveFrontError,
