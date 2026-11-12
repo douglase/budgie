@@ -552,9 +552,9 @@ def _collect_types(node: BudgetNode) -> list[str]:
 def _style_name(type_name: str) -> str:
     """Return the tikz style name for a ``Type`` (e.g. ``type_static_coherent``).
 
-    Underscore-private but a *de facto public API*: ``schmidt_ESP_template``'s
-    ``budgets/exposure_time/render_tree.py`` imports this directly. Changing the
-    slug format breaks that consumer's generated figures.
+    Underscore-private but a *de facto public API*: downstream renderers that
+    lay out their own trees import this directly. Changing the slug format
+    breaks their generated figures.
     """
     raw = "".join(char.lower() if char.isalnum() else "_" for char in type_name)
     safe = "_".join(part for part in raw.split("_") if part)
@@ -700,10 +700,10 @@ def _tikz_style_block(node: BudgetNode, alert_on_exceedances: bool) -> str:
     rendered: subtrees restart at ``blue!15``, and an 8th type reuses the 1st
     type's colour.
 
-    Underscore-private but a *de facto public API*: ``schmidt_ESP_template``'s
-    ``budgets/exposure_time/render_tree.py`` calls this directly (with
-    ``alert_on_exceedances=False``) to colour a tree it lays out itself.
-    Changing the signature or the emitted block's shape breaks that consumer.
+    Underscore-private but a *de facto public API*: downstream renderers call
+    this directly (typically with ``alert_on_exceedances=False``) to colour a
+    tree they lay out themselves. Changing the signature or the emitted block's
+    shape breaks those consumers.
     """
     palette = [
         "blue!15",
@@ -754,8 +754,8 @@ def render_tikz(
       independent of ``alert_on_exceedances``. Both apply to leaves only --
       subtotals and post-processing roll-ups are never flagged.
 
-    Consumers that build their own node labels (as ``schmidt_ESP_template``
-    does) get the per-Type fill only; none of the allocation cues appear.
+    Consumers that build their own node labels get the per-Type fill only;
+    none of the allocation cues appear.
 
     Parameters
     ----------

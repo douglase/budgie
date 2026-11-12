@@ -18,15 +18,19 @@ from a 7-colour palette, and flag over-allocated leaves (`CBE > Allocation`) wit
 a red border, a `△!` prefix, and a yellow highlight, while underlining leaves that
 stay within allocation.
 
-The exposure-time-calculator budget figures in
-[`schmidt_ESP_template`](https://github.com/douglase/schmidt_ESP_template) pin this
-branch and consume the per-`Type` fill via `_tikz_style_block`/`_style_name`.
-Those two underscore-private helpers are a de facto public API for that consumer —
-see the Downstream contract section of the reference before changing them.
+Downstream renderers that lay out their own TikZ trees consume the per-`Type`
+fill via `_tikz_style_block`/`_style_name`. Those two underscore-private helpers
+are a de facto public API for such consumers — see the Downstream contract
+section of the reference before changing them.
 
 See [Tree rendering and colour coding](docs/tree_rendering.md) for the full
 reference and [`docs/tree_rendering.ipynb`](docs/tree_rendering.ipynb) for a
-runnable example.
+runnable example. [`docs/examples/report.py`](docs/examples/report.py) reports any budget
+defined only in YAML (terms, per-group `sum`/`rss` rules, post-processing chain,
+optional `available` total) through `budgie.tree` with no budget class;
+[`docs/examples/dm_stroke`](docs/examples/dm_stroke) is a worked
+deformable-mirror stroke budget, with a standalone notebook
+([`dm_stroke.ipynb`](docs/examples/dm_stroke/dm_stroke.ipynb)) that walks through it.
 
 ## Related Documents
 - [STP Budget Package Description](docs/design_description.md)

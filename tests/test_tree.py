@@ -283,33 +283,33 @@ class TestTreeRendering(TestCase):
 
 
 class TestDownstreamStyleContract(TestCase):
-    """Lock the colour-styling API that ``schmidt_ESP_template`` depends on.
+    """Lock the colour-styling API that downstream renderers depend on.
 
-    Its ``budgets/exposure_time/render_tree.py`` lays the tree out itself but
-    imports ``_style_name`` and ``_tikz_style_block`` from budgie to colour it.
-    Those names are underscore-private yet are a de facto public API for that
-    consumer, so changes here must be deliberate. See ``docs/tree_rendering.md``.
+    A consumer that lays the tree out itself imports ``_style_name`` and
+    ``_tikz_style_block`` from budgie to colour it. Those names are
+    underscore-private yet are a de facto public API for such consumers, so
+    changes here must be deliberate. See ``docs/tree_rendering.md``.
     """
 
-    def test_exposure_time_calculator_import_surface_exists(self):
+    def test_downstream_import_surface_exists(self):
         import budgie.tree as tree_module
 
         for name in ("BudgetNode", "_style_name", "_tikz_style_block", "build_tree", "render_ascii"):
-            self.assertTrue(hasattr(tree_module, name), f"schmidt_ESP_template imports {name}")
+            self.assertTrue(hasattr(tree_module, name), f"downstream renderers import {name}")
 
     def test_style_name_slug_format(self):
-        self.assertEqual(_style_name("Exoplanet Host Stars"), "type_exoplanet_host_stars")
+        self.assertEqual(_style_name("Thermal Drift"), "type_thermal_drift")
         self.assertEqual(_style_name("Static, Coherent"), "type_static_coherent")
 
-    def test_style_block_matches_exposure_time_calculator_output(self):
-        """Reproduces the committed ``exposure_time_tree.tex`` style block exactly."""
+    def test_style_block_for_six_types_plus_spine(self):
+        """Six category types after the rollup and scalar slots fill the 7-colour palette and wrap once."""
         types = [
-            "Exoplanet Host Stars",
-            "Benchmark",
-            "Extreme Debris Systems",
-            "Habitable Zone Disks",
-            "Warm Debris Disks",
-            "Reference Stars",
+            "Static Optics",
+            "Thermal Drift",
+            "Jitter",
+            "Polarization",
+            "Chromatic",
+            "Detector",
         ]
         records = [
             {"Name": f"tgt_{index}", "Allocation": 10.0, "CBE": 5.0, "Type": type_name}
@@ -319,8 +319,8 @@ class TestDownstreamStyleContract(TestCase):
             "field_map": {"cbe": "CBE", "allocation": "Allocation", "type": "Type"},
             "category_combine_ops": {type_name: "sum" for type_name in sorted(types)},
             "post_processing_chain": [
-                {"op": "sum", "label": "Sum of target integration times"},
-                {"op": "scalar_multiply", "factor": 1.0 / 0.9, "label": "Wall-clock budget"},
+                {"op": "sum", "label": "Sum of terms"},
+                {"op": "scalar_multiply", "factor": 1.0 / 0.9, "label": "Scaled total"},
             ],
         }
         node = build_tree(records, config=config)
@@ -329,13 +329,13 @@ class TestDownstreamStyleContract(TestCase):
             "\\tikzset{\n"
             "type_rollup/.style={fill=blue!15},\n"
             "type_scalar/.style={fill=green!15},\n"
-            "type_exoplanet_host_stars/.style={fill=orange!20},\n"
-            "type_benchmark/.style={fill=purple!15},\n"
-            "type_extreme_debris_systems/.style={fill=teal!15},\n"
-            "type_habitable_zone_disks/.style={fill=gray!20},\n"
-            "type_warm_debris_disks/.style={fill=cyan!15},\n"
+            "type_static_optics/.style={fill=orange!20},\n"
+            "type_thermal_drift/.style={fill=purple!15},\n"
+            "type_jitter/.style={fill=teal!15},\n"
+            "type_polarization/.style={fill=gray!20},\n"
+            "type_chromatic/.style={fill=cyan!15},\n"
             # An 8th type wraps the 7-colour palette back to the 1st colour.
-            "type_reference_stars/.style={fill=blue!15},\n"
+            "type_detector/.style={fill=blue!15},\n"
             "}\n"
         )
         self.assertEqual(_tikz_style_block(node, False), expected)

@@ -1,0 +1,33 @@
+# Example deformable-mirror stroke budget, defined only in YAML and built with
+# budgie.tree (no budget class). Values are peak-to-valley SURFACE stroke in nm;
+# at near-normal incidence surface = wavefront / 2.
+#
+# Each term's Allocation is the stroke specified for it and CBE is the current
+# best estimate. Terms are grouped by Type; the group's rule in
+# category_combine_ops says how its terms combine (sum when demands can stack on
+# the same actuator, rss when they are independent). Group totals are summed by
+# the post_processing_chain, and the result is compared with the stroke the DM
+# can deliver (budget.available). Build and report it with docs/examples/report.py.
+
+budget:
+  name: Example DM stroke budget
+  units: nm
+  available: 1400            # stroke the DM can deliver; everything below draws from it
+
+config:
+  field_map: {cbe: CBE, allocation: Allocation, type: Type}
+  category_combine_ops:
+    static: sum              # static corrections stack on the same actuators
+    dynamic: sum
+    image_plane_wfc: sum
+  post_processing_chain:
+    - {op: sum, label: Total stroke used}
+
+terms:
+  - {Name: telescope,           Type: static,          Allocation: 85,  CBE: 80,  trace: static telescope wavefront error}
+  - {Name: instrument,          Type: static,          Allocation: 15,  CBE: 12,  trace: static instrument wavefront error}
+  - {Name: dm_flat_map,         Type: static,          Allocation: 300, CBE: 280, trace: DM flat map}
+  # A PV budget needs PV inputs. When a source gives RMS wavefront, convert it
+  # and keep the inputs beside the number: 28 nm RMS wavefront x 5 (PV/RMS) / 2 = 70 nm surface PV.
+  - {Name: telescope_low_order, Type: dynamic,         Allocation: 50,  CBE: 45,  trace: dynamic low-order correction}
+  - {Name: dark_hole,           Type: image_plane_wfc, Allocation: 50,  CBE: 40,  trace: dark-hole correction}

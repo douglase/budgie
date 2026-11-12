@@ -17,10 +17,8 @@ without the other:
 2. **Allocation cues** — per-leaf alerts and confirmations baked into the node
    *labels* by `render_tikz`'s label builders.
 
-The exposure-time calculator in
-[`schmidt_ESP_template`](https://github.com/douglase/schmidt_ESP_template) — which
-pins `budgie` at `copilot/refine-forest-rendering` — uses **part 1 only**. See
-[Downstream contract](#downstream-contract-schmidt_esp_template) before changing
+Downstream renderers that lay out their own trees use **part 1 only**. See
+[Downstream contract](#downstream-contract-external-renderers) before changing
 anything in this file's scope.
 
 If the code and this document ever disagree, the code is authoritative and this
@@ -94,13 +92,14 @@ That means the colour of a `Type` is a property of *the tree being rendered*, no
 of the `Type` itself:
 
 - **Colours are not stable across separate renders.** Rendering a subtree, or a
-  differently-shaped tree, restarts the palette at `blue!15`. In the ETC's
-  paginated output, `Exoplanet Host Stars` is `orange!20` on the combined
-  overview page but `blue!15` on its own per-section page. Do **not** rely on a
-  colour as a persistent legend key across figures.
+  differently-shaped tree, restarts the palette at `blue!15`. In a paginated
+  output, a type that is `orange!20` on the combined overview page can be
+  `blue!15` on its own per-section page. Do **not** rely on a colour as a
+  persistent legend key across figures.
 - **More than 7 types collide.** The 8th distinct type wraps back to `blue!15`,
-  reusing the 1st type's colour. The ETC's overview tree has 8 types, so
-  `type_rollup` and `type_reference_stars` are both `blue!15`.
+  reusing the 1st type's colour. A tree with six category types plus the
+  `rollup` and `scalar` nodes has 8 types, so the 6th category shares `blue!15`
+  with `type_rollup`.
 
 Because the generated post-processing spine is walked first, `rollup` and
 `scalar` normally consume palette slots 1 and 2, and the first real category
@@ -110,8 +109,7 @@ Because the generated post-processing spine is walked first, `rollup` and
 
 These are produced by `render_tikz`'s label builders
 (`_format_leaf_value_text`, `_styled_node_name`) and the `overallocated` style.
-A consumer that builds its own node labels — as the ETC does — will **not** get
-any of them.
+A consumer that builds its own node labels will **not** get any of them.
 
 ### Over-allocated leaves
 
@@ -148,8 +146,8 @@ underline are unaffected.
 
 Compared with the figure above, `incoherent_1` has lost its red border, `△!`
 prefix, and yellow highlight, but keeps its `Type` fill — and the underlines on
-the within-allocation leaves are untouched. This is the flag the exposure-time
-calculator passes.
+the within-allocation leaves are untouched. This is the flag a renderer that
+builds its own labels would pass.
 
 ### Summary table
 
@@ -159,12 +157,12 @@ calculator passes.
 | `CBE > Allocation`         | leaves     | red bold border + `△!` prefix + yellow CBE | `render_tikz` labels + `overallocated` style | yes                        |
 | `CBE <= Allocation`        | leaves     | underlined CBE value                       | `render_tikz` labels | no                                        |
 
-## Downstream contract (`schmidt_ESP_template`)
+## Downstream contract (external renderers)
 
-The exposure-time calculator's
-`budgets/exposure_time/render_tree.py` does **not** call `render_tikz` for its
-TikZ output. It reimplements the outline layout with absolute coordinates (to
-control sibling spacing and pagination) and imports these budgie names directly:
+A downstream renderer may not call `render_tikz` for its TikZ output at all:
+for example, one that reimplements the outline layout with absolute coordinates
+(to control sibling spacing and pagination) and imports these budgie names
+directly:
 
 ```python
 from budgie.tree import (
@@ -175,15 +173,14 @@ from budgie.tree import (
 Two of those — **`_style_name` and `_tikz_style_block`** — are underscore-private
 but are a *de facto public API* for that consumer. Renaming them, changing
 `_style_name`'s slug format, or changing `_tikz_style_block`'s signature or its
-`\tikzset{…}` output shape will break the ETC build. Change them only
-deliberately, and update the pinned branch together with the template.
+`\tikzset{…}` output shape will break such consumers. Change them only
+deliberately, and coordinate the change with the consumers' pins.
 
-Consequences for what the ETC figures actually show:
+Consequences for what such a renderer's figures actually show:
 
-- It calls `_tikz_style_block(node, alert_on_exceedances=False)`, so the
+- If it calls `_tikz_style_block(node, alert_on_exceedances=False)`, the
   `overallocated` style is never defined.
-- It builds its own node labels (`\textbf` values, `\textcolor{gray}` filter
-  tags, `\textcolor{black!50}` notes), so **none** of the section-2 cues appear —
+- If it builds its own node labels, **none** of the section-2 cues appear —
   no `\colorbox`, no `△!`, and **no `\underline`** either.
 - Its figures are therefore coloured by **`Type` fill alone**, and are subject to
   both positional caveats above.
@@ -205,8 +202,8 @@ only in geometry:
 > `grow via three points`, which places them at *fixed* offsets and cannot
 > account for varying subtree heights. Nested subtrees with wide labels
 > therefore overlap. For production figures, compute node coordinates
-> explicitly — this is precisely why `schmidt_ESP_template` lays out its own
-> outline instead of using this one. The `forest` layout has no such issue.
+> explicitly, as a downstream renderer with its own outline layout would. The
+> `forest` layout has no such issue.
 
 ## Which fields are shown
 
@@ -228,8 +225,8 @@ Standalone output from `render_tikz(..., standalone=True)` pulls in `forest`,
 pgfkeys rejects the key, silently ignores the placement, and the outline
 degrades to a default tikz tree).
 
-When embedding a fragment (`standalone=False`) into a larger document — as
-`schmidt_ESP_template` does — that host document must load all three itself. The
+When embedding a fragment (`standalone=False`) into a larger document, that
+host document must load all three itself. The
 palette and highlights rely only on base `xcolor` percentage mixing (`blue!15`,
 `yellow!50`, …), so no `xcolor` package options are required.
 
